@@ -312,13 +312,13 @@ class ClickerGameClient {
             html += `
                 <div class="upgrade-item">
                     <div class="upgrade-header">
-                        <div class="upgrade-name">${u.icon} ${u.name} (${u.level})</div>
+                        <div class="upgrade-name">${u.icon} ${u.name} (Ур:${u.level} доход: +${this.formatNumber(u.income)}/с)</div>
                         <div class="upgrade-price">${this.formatNumber(u.price)}</div>
                     </div>
                     <div class="upgrade-description">${u.description}</div>
                     <button class="buy-btn" ${u.canAfford ? '' : 'disabled'} 
                             onclick="game.buyPassiveUpgrade(${u.id})">
-                        Купить (+${u.income}/сек)
+                        Купить (+${this.formatNumber(u.baseIncomePerLevel)}/сек)
                     </button>
                 </div>
             `;
@@ -353,7 +353,7 @@ class ClickerGameClient {
             html += `
                 <div class="upgrade-item">
                     <div class="upgrade-header">
-                        <div class="upgrade-name">${u.icon} ${u.name} (${u.level})</div>
+                        <div class="upgrade-name">${u.icon} ${u.name} (Ур:${u.level} доход: +${this.formatNumber(u.income)}/с)</div>
                         <div class="upgrade-price">${this.formatNumber(u.price)}</div>
                     </div>
                     <div class="upgrade-description">${u.description}</div>
