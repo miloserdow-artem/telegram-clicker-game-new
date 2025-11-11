@@ -173,7 +173,6 @@ router.post('/upgrades/passive', verifyTelegramAuth, async (req, res) => {
         level,
         price,
         income,
-        baseIncomePerLevel: upgrade.baseIncome, // Добавляем базовый доход за уровень
         canAfford: user.balance >= price
       };
     });
