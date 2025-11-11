@@ -54,23 +54,24 @@ router.post('/init', verifyTelegramAuth, async (req, res) => {
         user.isAdmin = true;
       }
       
-      // Handle referral
+      // Referral handling is now primarily done by the bot.
+      // This Web App backend will only store the referredBy ID if present.
+      // If referredBy is present and it's not a self-referral, award the referrer
       if (referredBy && referredBy !== telegramId) {
-        console.log('Processing referral:', { referredBy, telegramId });
+        console.log('New user referred by:', referredBy);
         const referrer = await User.findOne({ telegramId: referredBy });
         if (referrer) {
-          console.log('Referrer found:', referrer.telegramId, referrer.username);
-          const referralReward = parseInt(process.env.REFERRAL_REWARD) || 1000000;
+          const referralReward = parseInt(process.env.REFERRAL_REWARD) || 1000000; // Default to 1,000,000 if not set
           referrer.balance += referralReward;
           referrer.referralCount += 1;
           referrer.referralEarnings += referralReward;
           await referrer.save();
-          console.log('Referral reward given:', referralReward);
+          console.log(`Referrer ${referrer.telegramId} awarded ${referralReward} for new user ${telegramId}`);
         } else {
-          console.log('Referrer not found for telegramId:', referredBy);
+          console.log(`Referrer ${referredBy} not found for new user ${telegramId}`);
         }
       } else {
-        console.log('No referral or self-referral:', { referredBy, telegramId });
+        console.log('New user without referral or self-referral.');
       }
       
       await user.save();
@@ -617,78 +618,6 @@ router.post('/promo/activate', verifyTelegramAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Ошибка активации промокода'
-    });
-  }
-});
-
-// Test endpoint for referral system (development only)
-router.post('/test-referral', async (req, res) => {
-  try {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(403).json({
-        success: false,
-        message: 'This endpoint is only available in development mode'
-      });
-    }
-
-    const { referrerId, newUserId, newUserName } = req.body;
-
-    // Find referrer
-    const referrer = await User.findOne({ telegramId: referrerId });
-    if (!referrer) {
-      return res.json({
-        success: false,
-        message: 'Referrer not found'
-      });
-    }
-
-    // Check if new user already exists
-    let newUser = await User.findOne({ telegramId: newUserId });
-    if (newUser) {
-      return res.json({
-        success: false,
-        message: 'User already exists'
-      });
-    }
-
-    // Create new user with referral
-    newUser = new User({
-      telegramId: newUserId,
-      username: newUserName || 'Test User',
-      referredBy: referrerId
-    });
-
-    // Give reward to referrer
-    const referralReward = parseInt(process.env.REFERRAL_REWARD) || 1000000;
-    referrer.balance += referralReward;
-    referrer.referralCount += 1;
-    referrer.referralEarnings += referralReward;
-    
-    await referrer.save();
-    await newUser.save();
-
-    res.json({
-      success: true,
-      message: 'Referral test successful',
-      referrer: {
-        telegramId: referrer.telegramId,
-        username: referrer.username,
-        referralCount: referrer.referralCount,
-        referralEarnings: referrer.referralEarnings,
-        balance: referrer.balance
-      },
-      newUser: {
-        telegramId: newUser.telegramId,
-        username: newUser.username,
-        referredBy: newUser.referredBy
-      }
-    });
-  } catch (error) {
-    console.error('Test referral error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to test referral',
-      error: error.message
     });
   }
 });
