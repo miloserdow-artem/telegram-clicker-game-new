@@ -77,11 +77,6 @@ router.post('/init', verifyTelegramAuth, async (req, res) => {
       
       await user.save();
     } else {
-      // For existing users, ensure clickPower is at least 1
-      if (user.clickPower < 1) {
-        user.clickPower = 1;
-      }
-
       // Calculate offline earnings
       const offlineEarnings = user.calculateOfflineEarnings();
       if (offlineEarnings > 0) {
