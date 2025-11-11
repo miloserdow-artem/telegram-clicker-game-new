@@ -45,7 +45,8 @@ router.post('/init', verifyTelegramAuth, async (req, res) => {
       user = new User({
         telegramId,
         username,
-        referredBy: referredBy || null
+        referredBy: referredBy || null,
+        clickPower: 1 // Initialize clickPower to 1 to satisfy schema validation
       });
       
       // Check if user is admin
