@@ -318,7 +318,7 @@ class ClickerGameClient {
                     <div class="upgrade-description">${u.description}</div>
                     <button class="buy-btn" ${u.canAfford ? '' : 'disabled'} 
                             onclick="game.buyPassiveUpgrade(${u.id})">
-                        Купить (+${u.income}/сек)
+                        Купить (+${u.baseIncome}/сек)
                     </button>
                 </div>
             `;
