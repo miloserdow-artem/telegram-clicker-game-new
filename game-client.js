@@ -199,7 +199,7 @@ class ClickerGameClient {
         if (!this.botUsername) {
             this.botUsername = 'PhilipMorrisCoin_Bot';
         }
-        this.referralLink = `https://t.me/${this.botUsername}/${this.botUsername}?startapp=${this.userId}`;
+        this.referralLink = `https://t.me/${this.botUsername}/philipmorrisgame?startapp=${this.userId}`;
     }
 
     formatNumber(num) {
