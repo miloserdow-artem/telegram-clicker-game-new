@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кликер Игра</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Стили для улучшенной мобильной поддержки */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(to right,#df441d,#feb47b); 
+            color: white;
+            height: 100vh;
+            overflow-y: hidden;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: manipulation;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .balance {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .income-per-second {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .coin {
+            width: 370px;
+            height: 370px;
+            background: url(main_coin_1.png) center no-repeat;
+            background-size: 100%;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .coin:active,
+        .coin.clicked {
+            transform: scale(0.95);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .click-effect {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            color: #00ff00;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 10;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+
+        .bottom-nav {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 15px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: linear-gradient(to right,#df441d,#feb47b);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 20px;
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .top-list {
+            list-style: none;
+        }
+
+        .top-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-rank {
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 10px;
+        }
+
+        .upgrade-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+        }
+
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .upgrade-price {
+            background: #ffd700;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .upgrade-description {
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .buy-btn {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .buy-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .buy-btn:hover:not(:disabled) {
+            background: #45a049;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+        }
+
+        .faq-section {
+            margin-bottom: 20px;
+        }
+
+        .faq-question {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .faq-answer {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        /* Стили для вкладок */
+        .tab-container {
+            width: 100%;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 20px;
+            gap: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            opacity: 1;
+        }
+
+        .tab-content {
+            width: 100%;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Стили для реферальной системы */
+        .referral-section, .promo-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .referral-section h3, .promo-section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .referral-stats {
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .referral-link-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .referral-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .referral-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .copy-btn, .share-btn, .promo-btn {
+            width: auto;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .share-btn {
+            width: 100%;
+            background: #2196F3;
+        }
+
+        .promo-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .promo-input {
+            width: auto;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .promo-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .promo-message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .promo-message.success {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            display: block;
+        }
+
+        .promo-message.error {
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+            display: block;
+        }
+
+        /* Стили для заданий */
+        .task-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .task-title {
+            font-weight: bold;
+            font-size: 18px;
+            flex: 1;
+        }
+
+        .task-reward {
+            background: #ffd700;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .task-description {
+            opacity: 0.8;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .task-btn {
+            flex: 1;
+            background: #2196F3;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .task-btn:hover {
+            background: #1976D2;
+        }
+
+        .task-btn.check-btn {
+            background: #4CAF50;
+        }
+
+        .task-btn.check-btn:hover {
+            background: #45a049;
+        }
+
+        .task-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .task-completed-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 480px) {
+            .tab-btn {
+                font-size: 10px;
+                padding: 8px 4px;
+            }
+            
+            .referral-section, .promo-section {
+                padding: 15px;
+            }
+            
+            .referral-link-container {
+                flex-direction: column;
+            }
+
+            .promo-input-container {
+                flex-direction: column;
+            }
+
+            .promo-btn {
+                width: 100%;
+            }
+            
+            .copy-btn {
+                width: 100%;
+            }
+        }
+
+        /* Дополнительные стили для мобильных устройств */
+        @media (max-width: 480px) {
+            .coin {
+                width: 180px;
+                height: 180px;
+                font-size: 42px;
+            }
+            
+            .balance {
+                font-size: 24px;
+            }
+            
+            .nav-btn {
+                font-size: 12px;
+                padding: 12px 8px;
+            }
+            
+            .modal-content {
+                margin: 10px;
+                height: calc(100% - 20px);
+            }
+        }
+
+        @media (max-height: 600px) {
+            .coin {
+                width: 150px;
+                height: 150px;
+                font-size: 36px;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .bottom-nav {
+                padding: 10px;
+            }
+        }
+
+        /* Анимация пульсации для активности */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .coin.active-animation {
+            animation: pulse 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="balance" id="balance">0</div>
+            <div class="income-per-second" id="income">Доход: 0/сек</div>
+        </div>
+
+        <div class="game-area">
+            <div class="coin" id="coin"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="nav-btn" onclick="openModal('topModal')">🏆 Топ</button>
+            <button class="nav-btn" onclick="openModal('tasksModal')">📋 Задания</button>
+            <button class="nav-btn" onclick="openModal('bonusModal')">⭐ Бонусы</button>
+            <button class="nav-btn" onclick="openModal('faqModal')">❓ FAQ</button>
+        </div>
+    </div>
+
+    <!-- Top Modal -->
+    <div class="modal" id="topModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🏆 Топ игроков</div>
+                <button class="close-btn" onclick="closeModal('topModal')">Назад</button>
+            </div>
+            
+            <!-- Вкладки топа -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTopTab('balance')">💰 По балансу</button>
+                    <button class="tab-btn" onclick="switchTopTab('referrals')">👥 По рефералам</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div id="topBalanceTab" class="tab-panel active">
+                        <div id="topList" class="loading">Загрузка...</div>
+                    </div>
+                    <div id="topReferralsTab" class="tab-panel">
+                        <div id="topReferralsList" class="loading">Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bonus Modal (новое название для Upgrade Modal) -->
+    <div class="modal" id="bonusModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">⭐ Бонусы</div>
+                <button class="close-btn" onclick="closeModal('bonusModal')">Назад</button>
+            </div>
+            
+            <!-- Вкладки бонусов -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchBonusTab('passive')">⚡ Пассивный доход</button>
+                    <button class="tab-btn" onclick="switchBonusTab('click')">👆 Улучшение клика</button>
+                    <button class="tab-btn" onclick="switchBonusTab('referral')">👥 Рефералы</button>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- Пассивный доход -->
+                    <div id="passiveTab" class="tab-panel active">
+                        <div id="passiveUpgradeList" class="loading">Загрузка...</div>
+                    </div>
+                    
+                    <!-- Улучшения клика -->
+                    <div id="clickTab" class="tab-panel">
+                        <div id="clickUpgradeList" class="loading">Загрузка...</div>
+                    </div>
+                    
+                    <!-- Реферальная система -->
+                    <div id="referralTab" class="tab-panel">
+                        <div class="referral-section">
+                            <h3>👥 Пригласи друзей</h3>
+                            <div class="referral-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Приглашено друзей:</span>
+                                    <span class="stat-value" id="referralCount">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Заработано с рефералов:</span>
+                                    <span class="stat-value" id="referralEarned">0</span>
+                                </div>
+                            </div>
+                            
+                            <div class="referral-link-container">
+                                <input type="text" id="referralLink" class="referral-input" readonly placeholder="Ваша реферальная ссылка">
+                                <button class="copy-btn" onclick="copyReferralLink()">📋 Копировать</button>
+                            </div>
+                            
+                            <button class="share-btn" onclick="shareReferralLink()">📤 Поделиться</button>
+                        </div>
+                        
+                        <div class="promo-section">
+                            <h3>🎁 Промокод</h3>
+                            <div class="promo-input-container">
+                                <input type="text" id="promoInput" class="promo-input" placeholder="Промокод" maxlength="20">
+                                <button class="promo-btn" onclick="activatePromo()">✅ Активировать</button>
+                            </div>
+                            <div id="promoMessage" class="promo-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Modal -->
+    <div class="modal" id="tasksModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📋 Задания</div>
+                <button class="close-btn" onclick="closeModal('tasksModal')">Назад</button>
+            </div>
+            <div id="tasksList" class="loading">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div class="modal" id="faqModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">❓ FAQ</div>
+                <button class="close-btn" onclick="closeModal('faqModal')">Назад</button>
+            </div>
+            <div class="faq-section">
+                <div class="faq-question">🎮 Как играть?</div>
+                <div class="faq-answer">Тебе реально нужно объяснять? ты еблан?</div>
+            </div>
+            <div class="faq-section">
+                <div class="faq-question">💰 Об ивенте</div>
+                <div class="faq-answer">Кто будет топ 1 по балансу и топ 1 по рефералам получат футболку победителя<p>Ивент закончится 1 декабря 00:00</p></div>
+            </div>
+            <div class="faq-section
+                <div class="faq-question">📋 О создании</div>
+                <div class="faq-answer">Приложение реализовал Артём<p>Идею придумал Костя</p><p>Я потратил на создание 3 месяца и 5000 по меньшей мере.</p><p>Будет приятно если не будете называть хуйнёй :&#41;</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game-client.js"></script>
+</body>
+</html>
