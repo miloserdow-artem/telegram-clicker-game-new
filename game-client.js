@@ -36,18 +36,10 @@ class ClickerGameClient {
                         this.referredBy = startParam;
                         console.log('Referral detected:', this.referredBy);
                     }
-                } else {
-                    this.userId = 'demo_' + Math.random().toString(36).substr(2, 9);
-                    this.userName = 'Demo User';
                 }
-            } else {
-                this.userId = 'demo_' + Math.random().toString(36).substr(2, 9);
-                this.userName = 'Demo User';
             }
         } catch (error) {
             console.error('Telegram init error:', error);
-            this.userId = 'demo_' + Math.random().toString(36).substr(2, 9);
-            this.userName = 'Demo User';
         }
 
         console.log('User initialized:', this.userId, this.userName);
