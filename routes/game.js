@@ -368,7 +368,7 @@ router.get('/leaderboard/balance', async (req, res) => {
     const topUsers = await User.find()
       .sort({ balance: -1 })
       .limit(limit)
-      .select('telegramId username balance incomePerSecond');
+      .select('telegramId username balance');
     
     const leaderboard = topUsers.map((user, index) => ({
       rank: index + 1,

@@ -241,7 +241,6 @@ class ClickerGameClient {
                         <span class="top-rank">#${player.rank}</span>
                         <span>${trophy}${player.username}</span>
                     </div>
-                    <div>${player.incomePerSecond}/c</div>
                     <div>${this.formatNumber(player.balance)}</div>
                 </li>
             `;
