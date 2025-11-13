@@ -22,8 +22,10 @@
         }
 
         body {
-            background: linear-gradient(to right,#df441d,#feb47b); 
-            color: white;
+            /* background: linear-gradient(to right,#df441d,#feb47b); */
+            background: linear-gradient(to bottom right, #1a1a1a, #0a0a0a); /* Dark grey/black gradient */
+            /* color: white; */
+            color: #f0f0f0; /* Light grey for text */
             height: 100vh;
             overflow-y: hidden;
             overflow-x: hidden;
@@ -43,18 +45,22 @@
         .header {
             text-align: center;
             padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
+            /* background: rgba(0, 0, 0, 0.2); */
+            background: rgba(0, 0, 0, 0.4); /* Dark transparent grey */
         }
 
         .balance {
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 5px;
+            color: #8b0000; /* Bloody red for balance */
         }
 
         .income-per-second {
             font-size: 14px;
-            opacity: 0.8;
+            /* opacity: 0.8; */
+            opacity: 0.7; /* Slightly less opaque */
+            color: #8b0000; /* Bloody red for income */
         }
 
         .game-area {
@@ -68,25 +74,28 @@
         .coin {
             width: 370px;
             height: 370px;
-            background: url(main_coin_1.png) center no-repeat;
+            background: url(nuar.png) center no-repeat;
             background-size: 100%;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.1s ease;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            /* box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); /* Darker, more subtle shadow */
         }
 
         .coin:active,
         .coin.clicked {
             transform: scale(0.95);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            /* box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4); */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.6); /* Darker active shadow */
         }
 
         .click-effect {
             position: absolute;
             top: 0px;
             left: 0px;
-            color: #00ff00;
+            /* color: #00ff00; */
+            color: #8b0000; /* Bloody red for click effect */
             font-size: 24px;
             font-weight: bold;
             pointer-events: none;
@@ -101,16 +110,19 @@
 
         .bottom-nav {
             display: flex;
-            background: rgba(0, 0, 0, 0.3);
+            /* background: rgba(0, 0, 0, 0.3); */
+            background: rgba(0, 0, 0, 0.5); /* Dark transparent grey */
             padding: 15px;
             gap: 10px;
         }
 
         .nav-btn {
             flex: 1;
-            background: rgba(255, 255, 255, 0.2);
+            /* background: rgba(255, 255, 255, 0.2); */
+            background: rgba(255, 255, 255, 0.1); /* Lighter transparent grey */
             border: none;
-            color: white;
+            /* color: white; */
+            color: #f0f0f0; /* Light grey text */
             padding: 15px 10px;
             border-radius: 15px;
             font-size: 14px;
@@ -122,7 +134,8 @@
         }
 
         .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            /* background: rgba(255, 255, 255, 0.3); */
+            background: rgba(255, 255, 255, 0.2); /* Slightly darker hover state */
             transform: translateY(-2px);
         }
 
@@ -132,13 +145,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            /* background: rgba(0, 0, 0, 0.8); */
+            background: rgba(0, 0, 0, 0.9); /* Very dark transparent grey */
             display: none;
             z-index: 1000;
         }
 
         .modal-content {
-            background: linear-gradient(to right,#df441d,#feb47b);
+            /* background: linear-gradient(to right,#df441d,#feb47b); */
+            background: linear-gradient(to bottom right, #1a1a1a, #0a0a0a); /* Dark grey/black gradient */
             margin: 20px;
             padding: 20px;
             border-radius: 20px;
@@ -153,7 +168,8 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            /* border-bottom: 1px solid rgba(255, 255, 255, 0.3); */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Subtle light grey */
         }
 
         .modal-title {
@@ -162,9 +178,11 @@
         }
 
         .close-btn {
-            background: rgba(255, 255, 255, 0.2);
+            /* background: rgba(255, 255, 255, 0.2); */
+            background: rgba(255, 255, 255, 0.1); /* Darker close button */
             border: none;
-            color: white;
+            /* color: white; */
+            color: #f0f0f0; /* Light grey text */
             padding: 10px 15px;
             border-radius: 10px;
             cursor: pointer;
