@@ -22,7 +22,7 @@
         }
 
         body {
-            background: linear-gradient(to right,#df441d,#feb47b); 
+            background: linear-gradient(to right,#4b1406,#1a0500); 
             color: white;
             height: 100vh;
             overflow-y: hidden;
@@ -42,7 +42,7 @@
 
         .header {
             text-align: center;
-            padding: 20px;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.2);
         }
 
@@ -113,7 +113,7 @@
             color: white;
             padding: 15px 10px;
             border-radius: 15px;
-            font-size: 14px;
+            font-size: 25px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -138,7 +138,7 @@
         }
 
         .modal-content {
-            background: linear-gradient(to right,#df441d,#feb47b);
+            background: linear-gradient(to right,#4b1406,#1a0500); 
             margin: 20px;
             padding: 20px;
             border-radius: 20px;
@@ -204,7 +204,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .upgrade-name {
@@ -562,11 +562,6 @@
                 font-size: 24px;
             }
             
-            .nav-btn {
-                font-size: 12px;
-                padding: 12px 8px;
-            }
-            
             .modal-content {
                 margin: 10px;
                 height: calc(100% - 20px);
@@ -581,7 +576,7 @@
             }
             
             .header {
-                padding: 15px;
+                padding: 7px;
             }
             
             .bottom-nav {
@@ -599,6 +594,131 @@
         .coin.active-animation {
             animation: pulse 0.3s ease-in-out;
         }
+
+        /* Стили для отображения бонусов */
+        .bonus-display {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px 0;
+            background: rgba(0, 0, 0, 0.158);
+            border-radius: 10px;
+            margin: 10px auto;
+            max-width: 300px;
+        }
+
+        .bonus-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background-color: rgba(0, 0, 0, 0.342);
+            border-radius: 15%;
+            width: 45%;
+            height: 100%;
+            font-size: 14px;
+            opacity: 0.5; /* Полупрозрачный по умолчанию */
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bonus-item.active {
+            opacity: 1; /* Полностью непрозрачный при наличии бонуса */
+        }
+
+        .bonus-icon {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .bonus-count {
+            font-weight: bold;
+        }
+
+        .shield-timer {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        /* Стили для всплывающих сообщений */
+        .alarm-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1001;
+            opacity: 0;
+            animation: fadeInOut 2s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Стили для ежедневных наград */
+        .daily-rewards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .daily-reward-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 7px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .daily-reward-item.claimed {
+            opacity: 0.6;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .daily-reward-item.claimable {
+            border: 2px solid #ffd700;
+        }
+
+        .reward-day {
+            font-weight: bold;
+            font-size: 15px;
+            width: 20%;
+        }
+
+        .reward-details {
+            flex: 1;
+            font-size: 18px;
+        }
+
+        .reward-action {
+            width: 40%;
+            text-align: right;
+        }
+
+        .claimed-badge, .unavailable-badge {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .unavailable-badge {
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -606,6 +726,17 @@
         <div class="header">
             <div class="balance" id="balance">0</div>
             <div class="income-per-second" id="income">Доход: 0/сек</div>
+            <div class="bonus-display" id="bonusDisplay">
+                <div class="bonus-item" id="bombBonusItem">
+                    <span class="bonus-icon">💣</span>
+                    <span class="bonus-count" id="bombCount">0</span>
+                </div>
+                <div class="bonus-item" id="shieldBonusItem">
+                    <span class="bonus-icon">🛡️</span>
+                    <span class="bonus-count" id="shieldCount">0</span>
+                    <span class="shield-timer" id="shieldTimer"></span>
+                </div>
+            </div>
         </div>
 
         <div class="game-area">
@@ -613,10 +744,11 @@
         </div>
 
         <div class="bottom-nav">
-            <button class="nav-btn" onclick="openModal('topModal')">🏆 Топ</button>
-            <button class="nav-btn" onclick="openModal('tasksModal')">📋 Задания</button>
-            <button class="nav-btn" onclick="openModal('bonusModal')">⭐ Бонусы</button>
-            <button class="nav-btn" onclick="openModal('faqModal')">❓ FAQ</button>
+            <button class="nav-btn" onclick="openModal('topModal')">🏆</button>
+            <button class="nav-btn" onclick="openModal('tasksModal')">📋</button>
+            <button class="nav-btn" onclick="openModal('bonusModal')">⭐</button>
+            <button class="nav-btn" onclick="openModal('dailyRewardsModal')">📅</button>
+            <button class="nav-btn" onclick="openModal('faqModal')">❓</button>
         </div>
     </div>
 
@@ -722,6 +854,17 @@
         </div>
     </div>
 
+    <!-- Daily Rewards Modal -->
+    <div class="modal" id="dailyRewardsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📅 Ежедневные награды</div>
+                <button class="close-btn" onclick="closeModal('dailyRewardsModal')">Назад</button>
+            </div>
+            <div id="dailyRewardsList" class="loading">Загрузка наград...</div>
+        </div>
+    </div>
+
     <!-- FAQ Modal -->
     <div class="modal" id="faqModal">
         <div class="modal-content">
@@ -747,5 +890,28 @@
     </div>
 
     <script src="game-client.js"></script>
+
+    <!-- Use Bomb Modal -->
+    <div class="modal" id="useBombModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">💣 Выберите цель для бомбы</div>
+                <button class="close-btn" onclick="closeModal('useBombModal')">Назад</button>
+            </div>
+            <div id="bombTargetList" class="loading">Загрузка игроков...</div>
+        </div>
+    </div>
+
+    <!-- Use Shield Modal -->
+    <div class="modal" id="useShieldModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🛡️ Использовать щит?</div>
+                <button class="close-btn" onclick="closeModal('useShieldModal')">Отмена</button>
+            </div>
+            <p style="text-align: center; margin-bottom: 20px;">Вы уверены, что хотите использовать щит? Он защитит вас от атак на 3 часа.</p>
+            <button class="buy-btn" style="width: 100%;" onclick="game.activateShield()">✅ Использовать</button>
+        </div>
+    </div>
 </body>
 </html>

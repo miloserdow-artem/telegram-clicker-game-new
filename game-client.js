@@ -12,6 +12,11 @@ class ClickerGameClient {
         this.isLoading = false;
         this.isAdmin = false;
         this.apiUrl = '/api/game';
+
+        // New bonus properties
+        this.bombs = 0;
+        this.shields = 0;
+        this.shieldActiveUntil = null; // Date object
         
         this.init();
     }
@@ -82,6 +87,11 @@ class ClickerGameClient {
                 this.referralEarned = data.user.referralEarnings;
                 this.isAdmin = data.user.isAdmin;
                 this.botUsername = data.user.botUsername;
+
+                // Load new bonus data
+                this.bombs = data.user.bombs || 0;
+                this.shields = data.user.shields || 0;
+                this.shieldActiveUntil = data.user.shieldActiveUntil ? new Date(data.user.shieldActiveUntil) : null;
                 
                 if (data.user.offlineEarnings > 0) {
                     this.showNotification(`Вы заработали ${this.formatNumber(data.user.offlineEarnings)} монет офлайн!`);
@@ -114,6 +124,10 @@ class ClickerGameClient {
             e.preventDefault();
             coin.classList.remove('clicked');
         }, { passive: false });
+
+        // Event listeners for bonus items
+        document.getElementById('bombBonusItem').addEventListener('click', () => this.openUseBombModal());
+        document.getElementById('shieldBonusItem').addEventListener('click', () => this.openUseShieldModal());
     }
 
     async handleCoinClick(e) {
@@ -141,7 +155,14 @@ class ClickerGameClient {
             const data = await response.json();
             if (data.success) {
                 this.balance = data.balance;
-                this.updateBalance();
+                this.bombs = data.bombs || 0;
+                this.shields = data.shields || 0;
+                this.shieldActiveUntil = data.shieldActiveUntil ? new Date(data.shieldActiveUntil) : null;
+                this.updateUI();
+
+                if (data.bonusDropped) {
+                    this.showAlarmMessage(`Получен бонус: ${data.bonusDropped.type === 'bomb' ? '💣 Бомба' : '🛡️ Щит'}!`);
+                }
             }
         } catch (error) {
             console.error('Click error:', error);
@@ -164,6 +185,14 @@ class ClickerGameClient {
         setTimeout(() => effect.remove(), 1000);
     }
 
+    showAlarmMessage(message) {
+        const alarm = document.createElement('div');
+        alarm.className = 'alarm-message';
+        alarm.textContent = message;
+        document.body.appendChild(alarm);
+        setTimeout(() => alarm.remove(), 2000);
+    }
+
     startIncomeTimer() {
         setInterval(() => {
             if (this.incomePerSecond > 0) {
@@ -177,10 +206,49 @@ class ClickerGameClient {
         this.updateBalance();
         document.getElementById('income').textContent = `Доход: ${this.formatNumber(this.incomePerSecond)}/сек`;
         this.updateReferralUI();
+        this.updateBonusUI(); // Update new bonus UI
     }
 
     updateBalance() {
         document.getElementById('balance').textContent = this.formatNumber(this.balance);
+    }
+
+    updateBonusUI() {
+        const bombItem = document.getElementById('bombBonusItem');
+        const bombCount = document.getElementById('bombCount');
+        const shieldItem = document.getElementById('shieldBonusItem');
+        const shieldCount = document.getElementById('shieldCount');
+        const shieldTimer = document.getElementById('shieldTimer');
+
+        if (this.bombs > 0) {
+            bombItem.classList.add('active');
+            bombCount.textContent = this.bombs;
+        } else {
+            bombItem.classList.remove('active');
+            bombCount.textContent = '0';
+        }
+
+        if (this.shields > 0) {
+            shieldItem.classList.add('active');
+            shieldCount.textContent = this.shields;
+        } else {
+            shieldItem.classList.remove('active');
+            shieldCount.textContent = '0';
+        }
+
+        if (this.shieldActiveUntil && new Date() < this.shieldActiveUntil) {
+            shieldItem.classList.add('active'); // Ensure active if shield is on
+            const timeLeft = this.shieldActiveUntil.getTime() - new Date().getTime();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            shieldTimer.textContent = `${hours}ч ${minutes}м`;
+        } else {
+            shieldTimer.textContent = '';
+            // If shield is not active, and count is 0, make it semi-transparent
+            if (this.shields === 0) {
+                shieldItem.classList.remove('active');
+            }
+        }
     }
 
     updateReferralUI() {
@@ -211,6 +279,110 @@ class ClickerGameClient {
     showNotification(message) {
         console.log('Notification:', message);
         // Could add visual notification here
+    }
+
+    // Bonus methods
+    async openUseBombModal() {
+        if (this.bombs === 0) {
+            this.showNotification('У вас нет бомб!');
+            return;
+        }
+        openModal('useBombModal');
+        // Load top players for bomb target selection
+        try {
+            const response = await fetch(`${this.apiUrl}/leaderboard/balance`);
+            const data = await response.json();
+            if (data.success) this.displayBombTargets(data.leaderboard);
+        } catch (error) {
+            console.error('Load top players for bomb target error:', error);
+        }
+    }
+
+    displayBombTargets(players) {
+        const bombTargetList = document.getElementById('bombTargetList');
+        if (!players || players.length === 0) {
+            bombTargetList.innerHTML = '<div class="loading">Нет игроков для атаки</div>';
+            return;
+        }
+
+        let html = '<ul class="top-list">';
+        players.forEach(player => {
+            if (player.telegramId === this.userId) return; // Cannot bomb self
+            html += `
+                <li class="top-item">
+                    <div>
+                        <span>${player.username}</span>
+                    </div>
+                    <button class="buy-btn" onclick="game.useBomb('${player.telegramId}')">
+                        Отправить бомбу
+                    </button>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        bombTargetList.innerHTML = html;
+    }
+
+    async useBomb(targetTelegramId) {
+        if (this.bombs === 0) {
+            this.showNotification('У вас нет бомб!');
+            return;
+        }
+        try {
+            const response = await fetch(`${this.apiUrl}/useBomb`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: this.userId, targetTelegramId })
+            });
+            const data = await response.json();
+            if (data.success) {
+                this.bombs = data.bombs;
+                this.balance = data.balance; // Update balance in case of self-bombing or other effects
+                this.updateUI();
+                closeModal('useBombModal');
+                this.showAlarmMessage(`💣 Бомба отправлена ${data.targetUsername}!`);
+            } else {
+                alert(data.message || 'Не удалось отправить бомбу.');
+            }
+        } catch (error) {
+            console.error('Use bomb error:', error);
+            alert('Ошибка при отправке бомбы.');
+        }
+    }
+
+    openUseShieldModal() {
+        if (this.shields === 0) {
+            this.showNotification('У вас нет щитов!');
+            return;
+        }
+        openModal('useShieldModal');
+    }
+
+    async activateShield() {
+        if (this.shields === 0) {
+            this.showNotification('У вас нет щитов!');
+            return;
+        }
+        try {
+            const response = await fetch(`${this.apiUrl}/activateShield`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: this.userId })
+            });
+            const data = await response.json();
+            if (data.success) {
+                this.shields = data.shields;
+                this.shieldActiveUntil = data.shieldActiveUntil ? new Date(data.shieldActiveUntil) : null;
+                this.updateUI();
+                closeModal('useShieldModal');
+                this.showAlarmMessage('🛡️ Щит активирован!');
+            } else {
+                alert(data.message || 'Не удалось активировать щит.');
+            }
+        } catch (error) {
+            console.error('Activate shield error:', error);
+            alert('Ошибка при активации щита.');
+        }
     }
 
     // Leaderboard methods
@@ -537,6 +709,93 @@ class ClickerGameClient {
             alert('Ошибка проверки задания');
         }
     }
+
+    async loadDailyRewards() {
+        const dailyRewardsList = document.getElementById('dailyRewardsList');
+        dailyRewardsList.innerHTML = '<div class="loading">Загрузка наград...</div>';
+
+        try {
+            const response = await fetch(`${this.apiUrl}/daily-rewards`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: this.userId })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayDailyRewards(data.dailyRewards);
+            } else {
+                dailyRewardsList.innerHTML = `<div class="loading">${data.message || 'Ошибка загрузки ежедневных наград'}</div>`;
+            }
+        } catch (error) {
+            console.error('Load daily rewards error:', error);
+            dailyRewardsList.innerHTML = '<div class="loading">Ошибка загрузки ежедневных наград</div>';
+        }
+    }
+
+    displayDailyRewards(dailyRewardsData) {
+        const dailyRewardsList = document.getElementById('dailyRewardsList');
+        const { streak, lastClaimedDate, rewards } = dailyRewardsData;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastClaimed = lastClaimedDate ? new Date(lastClaimedDate) : null;
+        if (lastClaimed) lastClaimed.setHours(0, 0, 0, 0);
+
+        let html = '<div class="daily-rewards-container">';
+        rewards.forEach((reward, index) => {
+            const day = index + 1;
+            const isClaimed = lastClaimed && (streak >= day) && (lastClaimed.getTime() === today.getTime());
+            const canClaim = (streak === index) && (lastClaimed ? lastClaimed.getTime() < today.getTime() : true); // Can claim if it's the next day in streak or first claim
+
+            let rewardText = '';
+            if (reward.type === 'coins') {
+                rewardText = `💰${this.formatNumber(reward.amount)}`;
+            } else if (reward.type === 'bomb') {
+                rewardText = `💣${reward.amount}`;
+            } else if (reward.type === 'shield') {
+                rewardText = `🛡️${reward.amount}`;
+            }
+
+            html += `
+                <div class="daily-reward-item ${isClaimed ? 'claimed' : ''} ${canClaim ? 'claimable' : ''}">
+                    <div class="reward-day">День ${day}</div>
+                    <div class="reward-details">${rewardText}</div>
+                    <div class="reward-action">
+                        ${isClaimed ? '<span class="claimed-badge">✅ Получено</span>' :
+                           canClaim ? `<button class="buy-btn" onclick="game.claimDailyReward(${day})">Получить</button>` :
+                           '<span class="unavailable-badge">Ожидание</span>'}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        dailyRewardsList.innerHTML = html;
+    }
+
+    async claimDailyReward(day) {
+        try {
+            const response = await fetch(`${this.apiUrl}/daily-rewards/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: this.userId, day })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.balance = data.balance;
+                this.bombs = data.bombs;
+                this.shields = data.shields;
+                this.updateUI();
+                this.showAlarmMessage(`✅ Награда получена: ${data.rewardMessage}`);
+                this.loadDailyRewards(); // Reload to update UI
+            } else {
+                alert(data.message || 'Не удалось получить награду.');
+            }
+        } catch (error) {
+            console.error('Claim daily reward error:', error);
+            alert('Ошибка при получении награды.');
+        }
+    }
 }
 
 // Initialize game
@@ -556,6 +815,12 @@ function openModal(modalId) {
     } else if (modalId === 'bonusModal') {
         game.loadPassiveUpgrades();
         game.updateReferralUI();
+    } else if (modalId === 'useBombModal') {
+        // Handled by game.openUseBombModal()
+    } else if (modalId === 'useShieldModal') {
+        // Handled by game.openUseShieldModal()
+    } else if (modalId === 'dailyRewardsModal') {
+        game.loadDailyRewards();
     }
 }
 

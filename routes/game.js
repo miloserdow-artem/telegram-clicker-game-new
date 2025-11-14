@@ -15,6 +15,17 @@ const {
   getClickUpgrade
 } = require('../config/upgrades');
 
+// Daily Rewards Configuration
+const DAILY_REWARDS = [
+  { day: 1, type: 'shield', amount: 1, message: 'Бонус Щит' },
+  { day: 2, type: 'bomb', amount: 1, message: 'Бонус Бомба' },
+  { day: 3, type: 'coins', amount: 500000, message: '500,000 Монет' },
+  { day: 4, type: 'shield', amount: 1, message: '1 Щит' },
+  { day: 5, type: 'bomb', amount: 3, message: '3 Бомбы' },
+  { day: 6, type: 'coins', amount: 5000000, message: '5,000,000 Монет' },
+  { day: 7, type: 'bomb', amount: 5, message: '5 Бомб' },
+];
+
 // Middleware to verify Telegram authentication
 const verifyTelegramAuth = (req, res, next) => {
   const { telegramId, username } = req.body;
@@ -101,7 +112,10 @@ router.post('/init', verifyTelegramAuth, async (req, res) => {
         referralEarnings: user.referralEarnings,
         isAdmin: user.isAdmin,
         offlineEarnings: user.calculateOfflineEarnings(),
-        botUsername: process.env.BOT_USERNAME || 'PhilipMorrisCoin_Bot'
+        botUsername: process.env.BOT_USERNAME || 'PhilipMorrisCoin_Bot',
+        bombs: user.bombs,
+        shields: user.shields,
+        shieldActiveUntil: user.shieldActiveUntil
       }
     });
   } catch (error) {
@@ -132,12 +146,30 @@ router.post('/click', verifyTelegramAuth, async (req, res) => {
     const coinsEarned = user.clickPower * clicks;
     user.balance += coinsEarned;
     user.lastOnline = new Date();
+
+    let bonusDropped = null;
+    const random = Math.random();
+    const BOMB_DROP_CHANCE = parseFloat(process.env.BOMB_DROP_CHANCE) || 0.001;
+    const SHIELD_DROP_CHANCE = parseFloat(process.env.SHIELD_DROP_CHANCE) || 0.001;
+
+    if (random < BOMB_DROP_CHANCE) {
+      user.bombs += 1;
+      bonusDropped = { type: 'bomb' };
+    } else if (random < BOMB_DROP_CHANCE + SHIELD_DROP_CHANCE) {
+      user.shields += 1;
+      bonusDropped = { type: 'shield' };
+    }
+    
     await user.save();
     
     res.json({
       success: true,
       balance: user.balance,
-      coinsEarned
+      coinsEarned,
+      bombs: user.bombs,
+      shields: user.shields,
+      shieldActiveUntil: user.shieldActiveUntil,
+      bonusDropped
     });
   } catch (error) {
     console.error('Click error:', error);
@@ -620,6 +652,216 @@ router.post('/promo/activate', verifyTelegramAuth, async (req, res) => {
       success: false,
       message: 'Ошибка активации промокода'
     });
+  }
+});
+
+// Use Bomb
+router.post('/useBomb', verifyTelegramAuth, async (req, res) => {
+  try {
+    const { telegramId } = req;
+    const { targetTelegramId } = req.body;
+
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.bombs === 0) {
+      return res.status(400).json({ success: false, message: 'У вас нет бомб!' });
+    }
+
+    const targetUser = await User.findOne({ telegramId: targetTelegramId });
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'Цель не найдена' });
+    }
+
+    if (targetUser.telegramId === user.telegramId) {
+      return res.status(400).json({ success: false, message: 'Нельзя бомбить себя!' });
+    }
+
+    // Check if target has an active shield
+    const now = new Date();
+    if (targetUser.shieldActiveUntil && targetUser.shieldActiveUntil > now) {
+      user.bombs -= 1; // Bomb is consumed even if target is shielded
+      await user.save();
+      return res.json({
+        success: false,
+        message: `${targetUser.username} защищен щитом! Ваша бомба потрачена.`,
+        bombs: user.bombs,
+        balance: user.balance,
+        targetUsername: targetUser.username
+      });
+    }
+
+    const BOMB_DAMAGE = parseInt(process.env.BOMB_DAMAGE) || 300000;
+    targetUser.balance = Math.max(0, targetUser.balance - BOMB_DAMAGE);
+    user.bombs -= 1;
+
+    await Promise.all([user.save(), targetUser.save()]);
+
+    res.json({
+      success: true,
+      message: `Вы успешно сбросили бомбу на ${targetUser.username}!`,
+      bombs: user.bombs,
+      balance: user.balance,
+      targetUsername: targetUser.username
+    });
+
+  } catch (error) {
+    console.error('Use bomb error:', error);
+    res.status(500).json({ success: false, message: 'Ошибка при использовании бомбы' });
+  }
+});
+
+// Activate Shield
+router.post('/activateShield', verifyTelegramAuth, async (req, res) => {
+  try {
+    const { telegramId } = req;
+
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.shields === 0) {
+      return res.status(400).json({ success: false, message: 'У вас нет щитов!' });
+    }
+
+    const SHIELD_DURATION_HOURS = parseInt(process.env.SHIELD_DURATION_HOURS) || 3;
+    const now = new Date();
+    const shieldEndTime = new Date(now.getTime() + SHIELD_DURATION_HOURS * 60 * 60 * 1000);
+
+    user.shieldActiveUntil = shieldEndTime;
+    user.shields -= 1;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Щит активирован!',
+      shields: user.shields,
+      shieldActiveUntil: user.shieldActiveUntil
+    });
+
+  } catch (error) {
+    console.error('Activate shield error:', error);
+    res.status(500).json({ success: false, message: 'Ошибка при активации щита' });
+  }
+});
+
+// Get daily rewards status
+router.post('/daily-rewards', verifyTelegramAuth, async (req, res) => {
+  try {
+    const { telegramId } = req;
+    const user = await User.findOne({ telegramId });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastClaimed = user.lastClaimedDailyRewardDate ? new Date(user.lastClaimedDailyRewardDate.getFullYear(), user.lastClaimedDailyRewardDate.getMonth(), user.lastClaimedDailyRewardDate.getDate()) : null;
+
+    let currentStreak = user.dailyRewardStreak;
+
+    // Check if streak needs to be reset
+    if (lastClaimed) {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      if (lastClaimed.getTime() < yesterday.getTime()) {
+        // If last claim was before yesterday, reset streak
+        currentStreak = 0;
+      }
+    }
+
+    res.json({
+      success: true,
+      dailyRewards: {
+        streak: currentStreak,
+        lastClaimedDate: user.lastClaimedDailyRewardDate,
+        rewards: DAILY_REWARDS
+      }
+    });
+
+  } catch (error) {
+    console.error('Get daily rewards error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get daily rewards' });
+  }
+});
+
+// Claim daily reward
+router.post('/daily-rewards/claim', verifyTelegramAuth, async (req, res) => {
+  try {
+    const { telegramId } = req;
+    const user = await User.findOne({ telegramId });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastClaimed = user.lastClaimedDailyRewardDate ? new Date(user.lastClaimedDailyRewardDate.getFullYear(), user.lastClaimedDailyRewardDate.getMonth(), user.lastClaimedDailyRewardDate.getDate()) : null;
+
+    // Check if already claimed today
+    if (lastClaimed && lastClaimed.getTime() === today.getTime()) {
+      return res.status(400).json({ success: false, message: 'Вы уже получили сегодняшнюю награду.' });
+    }
+
+    let currentStreak = user.dailyRewardStreak;
+
+    // Check if streak needs to be reset
+    if (lastClaimed) {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      if (lastClaimed.getTime() < yesterday.getTime()) {
+        // If last claim was before yesterday, reset streak
+        currentStreak = 0;
+      }
+    }
+
+    const rewardIndex = currentStreak % DAILY_REWARDS.length;
+    const reward = DAILY_REWARDS[rewardIndex];
+
+    if (!reward) {
+      return res.status(500).json({ success: false, message: 'Ошибка: награда не найдена.' });
+    }
+
+    // Grant reward
+    let rewardMessage = '';
+    if (reward.type === 'coins') {
+      user.balance += reward.amount;
+      rewardMessage = `${reward.amount} монет`;
+    } else if (reward.type === 'bomb') {
+      user.bombs += reward.amount;
+      rewardMessage = `${reward.amount} бомб`;
+    } else if (reward.type === 'shield') {
+      user.shields += reward.amount;
+      rewardMessage = `${reward.amount} щитов`;
+    }
+
+    user.dailyRewardStreak = currentStreak + 1;
+    user.lastClaimedDailyRewardDate = now;
+    user.lastOnline = now; // Update last online as well
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Награда успешно получена!',
+      rewardMessage: reward.message,
+      balance: user.balance,
+      bombs: user.bombs,
+      shields: user.shields,
+      dailyRewardStreak: user.dailyRewardStreak
+    });
+
+  } catch (error) {
+    console.error('Claim daily reward error:', error);
+    res.status(500).json({ success: false, message: 'Failed to claim daily reward' });
   }
 });
 

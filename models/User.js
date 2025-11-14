@@ -63,6 +63,29 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  bombs: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  shields: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  shieldActiveUntil: {
+    type: Date,
+    default: null
+  },
+  dailyRewardStreak: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastClaimedDailyRewardDate: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
