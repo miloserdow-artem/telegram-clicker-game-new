@@ -215,9 +215,9 @@ router.post('/promo', verifyAdmin, async (req, res) => {
 // Create new promo code (admin only)
 router.post('/promo/create', verifyAdmin, async (req, res) => {
   try {
-    const { code, reward, maxUses, expiresAt } = req.body;
+    const { code, rewardType, rewardAmount, maxUses, expiresAt } = req.body;
     
-    if (!code || reward === undefined) {
+    if (!code || rewardType === undefined || rewardAmount === undefined) {
       return res.status(400).json({
         success: false,
         message: 'Code and reward are required'
@@ -235,7 +235,7 @@ router.post('/promo/create', verifyAdmin, async (req, res) => {
     
     const promoCode = new PromoCode({
       code: code.toUpperCase(),
-      reward: parseInt(reward),
+      reward: { type: rewardType, amount: parseInt(rewardAmount) },
       maxUses: maxUses ? parseInt(maxUses) : null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
       createdBy: req.adminUser.telegramId
@@ -267,7 +267,7 @@ router.post('/promo/create', verifyAdmin, async (req, res) => {
 // Update promo code (admin only)
 router.post('/promo/update', verifyAdmin, async (req, res) => {
   try {
-    const { promoId, reward, maxUses, isActive, expiresAt } = req.body;
+    const { promoId, rewardType, rewardAmount, maxUses, isActive, expiresAt } = req.body;
     
     if (!promoId) {
       return res.status(400).json({
@@ -284,7 +284,8 @@ router.post('/promo/update', verifyAdmin, async (req, res) => {
       });
     }
     
-    if (reward !== undefined) promoCode.reward = parseInt(reward);
+    if (rewardType !== undefined) promoCode.reward.type = rewardType;
+    if (rewardAmount !== undefined) promoCode.reward.amount = parseInt(rewardAmount);
     if (maxUses !== undefined) promoCode.maxUses = maxUses ? parseInt(maxUses) : null;
     if (isActive !== undefined) promoCode.isActive = isActive;
     if (expiresAt !== undefined) promoCode.expiresAt = expiresAt ? new Date(expiresAt) : null;

@@ -9,9 +9,8 @@ const promoCodeSchema = new mongoose.Schema({
     index: true
   },
   reward: {
-    type: Number,
-    required: true,
-    min: 0
+    type: { type: String, enum: ['coins', 'bomb', 'shield'], required: true },
+    amount: { type: Number, min: 0, required: true }
   },
   maxUses: {
     type: Number,

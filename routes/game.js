@@ -632,7 +632,14 @@ router.post('/promo/activate', verifyTelegramAuth, async (req, res) => {
     }
     
     // Award the reward
-    user.balance += promoCode.reward;
+    if (promoCode.reward.type === 'coins') {
+      user.balance += promoCode.reward.amount;
+    } else if (promoCode.reward.type === 'bomb') {
+      user.bombs += promoCode.reward.amount;
+    } else if (promoCode.reward.type === 'shield') {
+      user.shields += promoCode.reward.amount;
+    }
+
     user.claimedPromoCodes.push(code.toUpperCase());
     await user.save();
     
@@ -643,8 +650,12 @@ router.post('/promo/activate', verifyTelegramAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'Ты активировал промокод',
-      reward: promoCode.reward,
-      balance: user.balance
+      message: 'Ты активировал промокод',
+      rewardType: promoCode.reward.type,
+      rewardAmount: promoCode.reward.amount,
+      balance: user.balance,
+      bombs: user.bombs,
+      shields: user.shields
     });
   } catch (error) {
     console.error('Activate promo error:', error);
