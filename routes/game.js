@@ -650,7 +650,6 @@ router.post('/promo/activate', verifyTelegramAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'Ты активировал промокод',
-      message: 'Ты активировал промокод',
       rewardType: promoCode.reward.type,
       rewardAmount: promoCode.reward.amount,
       balance: user.balance,
