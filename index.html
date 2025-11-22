@@ -22,7 +22,8 @@
         }
 
         body {
-            background: linear-gradient(to right,#ff0000,#410606); 
+            background: #000000;
+            background: radial-gradient(circle,rgba(0, 0, 0, 1) 0%, rgb(26, 26, 26) 82%);
             color: white;
             height: 100vh;
             overflow-y: hidden;
@@ -50,11 +51,13 @@
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 5px;
+            color: red;
         }
 
         .income-per-second {
             font-size: 14px;
             opacity: 0.8;
+            color: red;
         }
 
         .game-area {
@@ -69,25 +72,24 @@
             width: 370px;
             height: 370px;
             background: url(main_coin_1.png) center no-repeat;
-            mix-blend-mode: multiply;
             background-size: 100%;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.1s ease;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0px 15px rgba(0, 0, 0, 0.637);
         }
 
         .coin:active,
         .coin.clicked {
             transform: scale(0.95);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0px 25px rgba(0, 0, 0, 0.637);
         }
 
         .click-effect {
             position: absolute;
             top: 0px;
             left: 0px;
-            color: #ffffff;
+            color: red;
             font-size: 24px;
             font-weight: bold;
             pointer-events: none;
@@ -139,7 +141,8 @@
         }
 
         .modal-content {
-            background: linear-gradient(to right,#ff0000,#410606); 
+            background: #000000;
+            background: radial-gradient(circle,rgba(0, 0, 0, 1) 0%, rgba(41, 41, 41, 1) 95%); 
             margin: 20px;
             padding: 20px;
             border-radius: 20px;
@@ -245,7 +248,7 @@
         }
 
         .buy-btn:hover:not(:disabled) {
-            background: #45a049;
+            background: #b40c0c;
         }
 
         .loading {
@@ -349,7 +352,7 @@
 
         .stat-value {
             font-weight: bold;
-            color: #ffd700;
+            color: red;
         }
 
         .referral-link-container {
@@ -374,7 +377,7 @@
 
         .copy-btn, .share-btn, .promo-btn {
             width: auto;
-            background: #4CAF50;
+            background: red;
             border: none;
             color: white;
             padding: 12px 15px;
@@ -389,7 +392,7 @@
 
         .share-btn {
             width: 100%;
-            background: #2196F3;
+            background: rgb(26, 0, 0);
         }
 
         .promo-input-container {
@@ -554,8 +557,8 @@
         /* Дополнительные стили для мобильных устройств */
         @media (max-width: 480px) {
             .coin {
-                width: 220px;
-                height: 229px;
+                width: 300px;
+                height: 300px;
                 font-size: 42px;
             }
             
@@ -633,6 +636,7 @@
 
         .bonus-count {
             font-weight: bold;
+            color: red;
         }
 
         .shield-timer {
@@ -687,7 +691,7 @@
         }
 
         .daily-reward-item.claimable {
-            border: 2px solid #ffd700;
+            border: 2px solid #ff0000;
         }
 
         .reward-day {
